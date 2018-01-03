@@ -42,10 +42,12 @@ damp_override/linear = -1.0
 damp_override/angular = -1.0
 script/script = ExtResource( 1 )
 move_speed = 400
-move_accel = 5
+move_accel = 3
 extra_mass = 300
-jump_force = -500
+jump_force = -300
 max_jumps = 1
+air_accel_mult = 0
+run_accel_mult = 1.5
 
 [node name="player_sprite" type="Sprite" parent="player"]
 
