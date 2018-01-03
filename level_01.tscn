@@ -18,10 +18,10 @@ extents = Vector2( 512, 32 )
 
 [node name="player" type="RigidBody2D" parent="."]
 
-transform/pos = Vector2( 512, 384 )
+transform/pos = Vector2( 512, 128 )
 input/pickable = false
 shapes/0/shape = SubResource( 1 )
-shapes/0/transform = Matrix32( 1, 0, 0, 1, 0, 0 )
+shapes/0/transform = Matrix32( 0.6, 0, 0, 1.2, 0, 0 )
 shapes/0/trigger = false
 collision/layers = 1
 collision/mask = 1
@@ -41,18 +41,49 @@ velocity/angular = 0.0
 damp_override/linear = -1.0
 damp_override/angular = -1.0
 script/script = ExtResource( 1 )
-move_speed = 200
+move_speed = 400
 move_accel = 5
+extra_mass = 300
+jump_force = -500
+max_jumps = 1
 
 [node name="player_sprite" type="Sprite" parent="player"]
 
+transform/scale = Vector2( 0.6, 1.2 )
 texture = ExtResource( 2 )
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="player"]
 
+transform/scale = Vector2( 0.6, 1.2 )
 shape = SubResource( 1 )
 trigger = false
 _update_shape_index = 0
+
+[node name="Camera2D" type="Camera2D" parent="player"]
+
+anchor_mode = 1
+rotating = false
+current = true
+zoom = Vector2( 1, 1 )
+limit/left = -10000000
+limit/top = -10000000
+limit/right = 10000000
+limit/bottom = 10000000
+drag_margin/h_enabled = true
+drag_margin/v_enabled = true
+smoothing/enable = false
+smoothing/speed = 5.0
+drag_margin/left = 0.2
+drag_margin/top = 0.2
+drag_margin/right = 0.2
+drag_margin/bottom = 0.2
+
+[node name="RayCast2D" type="RayCast2D" parent="player"]
+
+enabled = true
+cast_to = Vector2( 0, 50 )
+layer_mask = 1
+type_mask = 15
 
 [node name="ground" type="StaticBody2D" parent="."]
 
