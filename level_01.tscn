@@ -12,7 +12,7 @@ extents = Vector2( 32, 32 )
 [sub_resource type="RectangleShape2D" id=2]
 
 custom_solver_bias = 0.0
-extents = Vector2( 512, 32 )
+extents = Vector2( 2048, 32 )
 
 [node name="world" type="Node2D"]
 
@@ -42,17 +42,13 @@ damp_override/linear = -1.0
 damp_override/angular = -1.0
 script/script = ExtResource( 1 )
 move_speed = 400
+run_speed = 600
 move_accel = 3
+air_accel = 2
 extra_mass = 300
 jump_force = -300
 max_jumps = 1
 air_accel_mult = 0
-run_accel_mult = 1.5
-
-[node name="player_sprite" type="Sprite" parent="player"]
-
-transform/scale = Vector2( 0.6, 1.2 )
-texture = ExtResource( 2 )
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="player"]
 
@@ -87,9 +83,22 @@ cast_to = Vector2( 0, 50 )
 layer_mask = 1
 type_mask = 15
 
+[node name="rotate" type="Node2D" parent="player"]
+
+[node name="player_sprite" type="Sprite" parent="player/rotate"]
+
+transform/scale = Vector2( 0.6, 1.2 )
+texture = ExtResource( 2 )
+
+[node name="player_sprite1" type="Sprite" parent="player/rotate"]
+
+transform/pos = Vector2( 25, 0 )
+transform/scale = Vector2( 0.2, 0.2 )
+texture = ExtResource( 2 )
+
 [node name="ground" type="StaticBody2D" parent="."]
 
-transform/pos = Vector2( 512, 512 )
+transform/pos = Vector2( 2048, 512 )
 input/pickable = false
 shapes/0/shape = SubResource( 2 )
 shapes/0/transform = Matrix32( 1, 0, 0, 1, 0, 0 )
@@ -103,7 +112,7 @@ bounce = 0.0
 
 [node name="ground_sprite" type="Sprite" parent="ground"]
 
-transform/scale = Vector2( 16, 1 )
+transform/scale = Vector2( 64, 1 )
 texture = ExtResource( 3 )
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ground"]
