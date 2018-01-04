@@ -13,7 +13,7 @@ export var move_accel = 3
 export var air_accel = 2
 export var extra_mass = 300
 export var jump_force = -300
-export var max_jumps = 1
+export var max_jumps = 2
 export var air_accel_mult = 2/3
 var curr_jumps = 0
 var curr_vel = Vector2(0, 0)
@@ -25,7 +25,7 @@ var PLAYER_STATE = ""
 var PLAYER_STATE_NEXT = ""
 
 var ORIENTATION_PREV = ""
-var ORIENTATION = "left"
+var ORIENTATION = ""
 var ORIENTATION_NEXT = ""
 
 func move(vel, acc, delta):
@@ -39,7 +39,11 @@ func get_state():
 		return "air"
 
 func set_facing():
-	if (ORIENTATION == "right" and ORIENTATION_NEXT == "left") or \
+	# Default facing
+	if (ORIENTATION == "" and ORIENTATION_NEXT == "left"):
+		pass
+	if (ORIENTATION == "" and ORIENTATION_NEXT == "right") or \
+	   (ORIENTATION == "right" and ORIENTATION_NEXT == "left") or \
 	   (ORIENTATION == "left" and ORIENTATION_NEXT == "right"):
 		rotate_node.set_scale(rotate_node.get_scale() * Vector2(-1, 1))
 

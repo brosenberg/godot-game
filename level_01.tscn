@@ -47,7 +47,7 @@ move_accel = 3
 air_accel = 2
 extra_mass = 300
 jump_force = -300
-max_jumps = 1
+max_jumps = 2
 air_accel_mult = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="player"]
