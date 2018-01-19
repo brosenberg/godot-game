@@ -11,11 +11,12 @@ export var move_speed = 400
 export var run_speed = 600
 export var move_accel = 3
 export var air_accel = 2
-export var extra_mass = 900
+export var extra_mass = 500
 export var jump_force = -650
 export var max_jumps = 1
 export var air_accel_mult = 0.667
 var curr_jumps = 0
+var jumping = 0
 var curr_vel = Vector2(0, 0)
 var raycast_down = null
 var rotate_node = null
@@ -72,6 +73,8 @@ func _fixed_process(delta):
     PLAYER_STATE_NEXT = get_state()
 
 func air_state(delta):
+    jumping = 0
+    set_applied_force(Vector2(0, extra_mass))
     if btn_right.check() == 2:
         move(-move_speed, air_accel, delta)
         ORIENTATION_NEXT = "right"
@@ -87,16 +90,22 @@ func air_state(delta):
 func ground_state(delta):
     curr_jumps = 0
     var final_speed = move_speed
+    set_applied_force(Vector2(0, 20*extra_mass))
     if btn_run.check() == 2:
         final_speed = run_speed
+
     if btn_right.check() == 2:
         move(-final_speed, move_accel, delta)
         ORIENTATION_NEXT = "right"
-    if btn_left.check() == 2:
+    elif btn_left.check() == 2:
         move(final_speed, move_accel, delta)
         ORIENTATION_NEXT = "left"
     if btn_left.check() == 0 and btn_right.check() == 0:
         move(0, move_accel, delta)
-    if btn_jump.check() == 1:
+
+    if btn_jump.check() == 1 or jumping == 1:
         curr_jumps = 1
+        jumping = 1
         set_axis_velocity(Vector2(0, jump_force))
+    else:
+        set_axis_velocity(Vector2(0, 0))
