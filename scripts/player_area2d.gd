@@ -37,15 +37,35 @@ func set_facing():
 # Returns [ left, right, top, bottom ]
 func get_edges(body):
     var pos = body.get_global_pos()
-    var rect = body.get_item_and_children_rect()
+    var rect = body.get_node("CollisionShape2D").get_item_rect()
     print(rect)
-    return [pos.x, (pos.x + rect.size[2]),
-            pos.y, (pos.y - rect.size[3])]
+    return [pos.x, (pos.x + rect.size[0]),
+            pos.y, (pos.y - rect.size[1])]
+
+func check_collision(delta):
+    var bodies = get_overlapping_bodies()
+    var mycoll = get_node("CollisionShape2D")
+    if bodies.size():
+        for body in bodies:
+            var coll = body.get_node("CollisionShape2D")
+            #var shape = coll.get_shape()
+            var collision = coll.get_shape().collide_and_get_contacts(
+                coll.get_global_transform(),
+                mycoll.get_shape(),
+                mycoll.get_global_transform()
+            )
+            if collision[0][0] == collision[1][0]:
+                prints("Vertical collision")
+            if collision[0][1] == collision[1][1]:
+                prints("Horizontal collision")
+        return true
+    else:
+        return false
 
 # Should return [x, y].
 # If x = 1 right collision, x = -1 left collision, x = 0 no horiz collision
 # If y = 1 top collision, y = -1 bottom collision, y = 0 no vert collision
-func check_collision(delta):
+func _check_collision(delta):
     var bodies = get_overlapping_bodies()
     var myedges = get_edges(self)
     if bodies.size():
