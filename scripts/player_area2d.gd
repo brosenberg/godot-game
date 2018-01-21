@@ -12,18 +12,11 @@ var collide_node = null
 
 var PLAYER_STATE_PREV = ""
 var PLAYER_STATE = ""
-var PLAYER_STATE_NEXT = ""
+var PLAYER_STATE_NEXT = "air"
 
 var ORIENTATION_PREV = ""
 var ORIENTATION = ""
 var ORIENTATION_NEXT = ""
-
-func get_state():
-    return "air"
-    #if raycast_down.is_colliding():
-    #    return "ground"
-    #else:
-    #    return "air"
 
 func set_facing():
     # Default facing
@@ -34,62 +27,68 @@ func set_facing():
        (ORIENTATION == "left" and ORIENTATION_NEXT == "right"):
         rotate_node.set_scale(rotate_node.get_scale() * Vector2(-1, 1))
 
-# Returns [ left, right, top, bottom ]
-func get_edges(body):
+# Returns [ left_pos, right_pos, top_pos, bottom_pos, x_extent, y_extent ]
+# Only works on bodies with rectangular CollisionShape2D's
+func get_corners(body):
     var pos = body.get_global_pos()
-    var rect = body.get_node("CollisionShape2D").get_item_rect()
-    print(rect)
-    return [pos.x, (pos.x + rect.size[0]),
-            pos.y, (pos.y - rect.size[1])]
+    var extents = body.get_node("CollisionShape2D").get_shape().get_extents()
+    return [pos.x - extents[0], pos.x + extents[0],
+            pos.y - extents[1], pos.y + extents[1],
+            extents[0], extents[1]]
 
-func check_collision(delta):
+func vertical_collide(collision):
+    if collision[0][1] > get_global_pos()[1]:
+        PLAYER_STATE = "ground"
+        return "down"
+    else:
+        return "up"
+
+# Aligns body1 downwards on top of body2
+func align_down(body1, body2):
+    var body1_corners = get_corners(body1)
+    var body2_corners = get_corners(body2)
+    # Let's prematurely optimize a body1.get_global_pos() out of here and use
+    # the one we already did in get_corners(body1)
+    var new_pos = Vector2(body1_corners[0]+body1_corners[4],
+                          body2_corners[2]-body1_corners[5])
+    prints("Moving to", new_pos)
+    body1.set_global_pos(new_pos)
+
+# This will shuffle the player around if there's multiple conflicting
+# collisions. This should probably check to see if it's moving the player
+# around cyclically and if so, punt them to somewhere safe.
+# THIS IS HOW WE GET ZIPS
+# Or just kill them. It worked for Mega Man 3+
+func check_collision():
     var bodies = get_overlapping_bodies()
     var mycoll = get_node("CollisionShape2D")
     if bodies.size():
         for body in bodies:
-            var coll = body.get_node("CollisionShape2D")
-            #var shape = coll.get_shape()
-            var collision = coll.get_shape().collide_and_get_contacts(
-                coll.get_global_transform(),
+            var collision_node = body.get_node("CollisionShape2D")
+            var collision = collision_node.get_shape().collide_and_get_contacts(
+                collision_node.get_global_transform(),
                 mycoll.get_shape(),
                 mycoll.get_global_transform()
             )
-            if collision[0][0] == collision[1][0]:
-                prints("Vertical collision")
-            if collision[0][1] == collision[1][1]:
-                prints("Horizontal collision")
-        return true
-    else:
-        return false
-
-# Should return [x, y].
-# If x = 1 right collision, x = -1 left collision, x = 0 no horiz collision
-# If y = 1 top collision, y = -1 bottom collision, y = 0 no vert collision
-func _check_collision(delta):
-    var bodies = get_overlapping_bodies()
-    var myedges = get_edges(self)
-    if bodies.size():
-        for body in bodies:
-            #prints("Colliding with object at", rect.size[0])
-            var edges = get_edges(body)
-            if edges[0] < myedges[1]:
-                prints("Colliding on right", myedges, edges)
-            if edges[1] > myedges[0]:
-                prints("Colliding on left", myedges, edges)
-            if edges[3] > myedges[2]:
-                prints("Colliding on top", myedges, edges)
-            if edges[2] < myedges[3]:
-                prints("Colliding on bottom", myedges, edges)
+            if collision.size() == 2:
+                print("Angle collision")
+                vertical_collide(collision)
+            elif collision.size() == 4:
+                prints(collision[0]-collision[1])
+                if collision[0][0] == collision[1][0]:
+                    if vertical_collide(collision) == "down":
+                        align_down(self, body)
+                if collision[0][1] == collision[1][1]:
+                    prints("Horizontal collision")
+                    prints(collision)
         return true
     else:
         return false
 
 func _ready():
     rotate_node = get_node("rotate")
-    #collide_node = get_node("player_kinematic")
 
     set_fixed_process(true)
-    PLAYER_STATE = get_state()
 
 func _fixed_process(delta):
     PLAYER_STATE_PREV = PLAYER_STATE
@@ -104,7 +103,7 @@ func _fixed_process(delta):
 #    elif PLAYER_STATE == "air":
 #        air_state(delta)
     set_facing()
-    PLAYER_STATE_NEXT = get_state()
+    #PLAYER_STATE_NEXT = get_state()
 
 func move(vector, delta):
     vector.x *= delta
@@ -116,7 +115,7 @@ func ground_state(delta):
     var speed = 300
 
     if PLAYER_STATE == "air":
-        movement.y = 400
+        movement.y = 1900
 
     if btn_run.check() == 2:
         speed = 500
@@ -133,5 +132,5 @@ func ground_state(delta):
     if btn_jump.check() == 2:
         movement.y = -200
 
-    if not check_collision(delta):
+    if not check_collision():
         move(movement, delta)
