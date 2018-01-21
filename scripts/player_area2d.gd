@@ -38,10 +38,17 @@ func get_corners(body):
 
 func vertical_collide(collision):
     if collision[0][1] > get_global_pos()[1]:
-        PLAYER_STATE = "ground"
+        PLAYER_STATE_NEXT = "ground"
         return "down"
     else:
         return "up"
+
+func horizontal_collide(collision):
+    PLAYER_STATE_NEXT = "ground_stop"
+    if collision[0][0] > get_global_pos()[0]:
+        return "right"
+    else:
+        return "left"
 
 # Aligns body1 downwards on top of body2
 func align_down(body1, body2):
@@ -51,7 +58,25 @@ func align_down(body1, body2):
     # the one we already did in get_corners(body1)
     var new_pos = Vector2(body1_corners[0]+body1_corners[4],
                           body2_corners[2]-body1_corners[5])
-    prints("Moving to", new_pos)
+    #prints("Moving to", new_pos)
+    body1.set_global_pos(new_pos)
+
+func align_right(body1, body2):
+    var body1_corners = get_corners(body1)
+    var body2_corners = get_corners(body2)
+    var new_pos = Vector2(body2_corners[0]+body1_corners[4],
+                          body1.get_pos()[1])
+    prints(body2_corners[0], body2_corners[1], body1_corners[4])
+    prints("Moving to", new_pos, "Old pos", body1.get_global_pos())
+    body1.set_global_pos(new_pos)
+
+func align_left(body1, body2):
+    var body1_corners = get_corners(body1)
+    var body2_corners = get_corners(body2)
+    var new_pos = Vector2(body2_corners[1]-body1_corners[4],
+                          body1.get_pos()[1])
+    prints(body2_corners[0], body2_corners[1], body1_corners[4])
+    prints("Moving to", new_pos, "Old pos", body1.get_global_pos())
     body1.set_global_pos(new_pos)
 
 # This will shuffle the player around if there's multiple conflicting
@@ -59,7 +84,7 @@ func align_down(body1, body2):
 # around cyclically and if so, punt them to somewhere safe.
 # THIS IS HOW WE GET ZIPS
 # Or just kill them. It worked for Mega Man 3+
-func check_collision():
+func handle_collision():
     var bodies = get_overlapping_bodies()
     var mycoll = get_node("CollisionShape2D")
     if bodies.size():
@@ -70,17 +95,23 @@ func check_collision():
                 mycoll.get_shape(),
                 mycoll.get_global_transform()
             )
-            if collision.size() == 2:
+            if collision == null:
+                continue
+            elif collision.size() == 2:
                 print("Angle collision")
                 vertical_collide(collision)
             elif collision.size() == 4:
-                prints(collision[0]-collision[1])
+                #if PLAYER_STATE != "ground" and collision[0][0] == collision[1][0]:
                 if collision[0][0] == collision[1][0]:
                     if vertical_collide(collision) == "down":
                         align_down(self, body)
                 if collision[0][1] == collision[1][1]:
-                    prints("Horizontal collision")
-                    prints(collision)
+                    if horizontal_collide(collision) == "left":
+                        print("colliding left")
+                        align_left(self, body)
+                    else:
+                        print("colliding right")
+                        align_right(self, body)
         return true
     else:
         return false
@@ -97,11 +128,13 @@ func _fixed_process(delta):
     ORIENTATION_PREV = ORIENTATION
     ORIENTATION = ORIENTATION_NEXT
 
-    ground_state(delta)
-#    if PLAYER_STATE == "ground":
-#        ground_state(delta)
-#    elif PLAYER_STATE == "air":
-#        air_state(delta)
+    if PLAYER_STATE == "ground_stop":
+        ground_stop_state(delta)
+    elif PLAYER_STATE == "ground":
+        ground_state(delta)
+    elif PLAYER_STATE == "air":
+        air_state(delta)
+    handle_collision()
     set_facing()
     #PLAYER_STATE_NEXT = get_state()
 
@@ -110,12 +143,24 @@ func move(vector, delta):
     vector.y *= delta
     global_translate(vector)
 
+# Ground stop state
+func ground_stop_state(delta):
+    var movement = Vector2(0, 0)
+
+    if btn_right.check() == 2:
+        PLAYER_STATE_NEXT = "ground"
+        ORIENTATION_NEXT = "right"
+    elif btn_left.check() == 2:
+        PLAYER_STATE_NEXT = "ground"
+        ORIENTATION_NEXT = "left"
+
+    if btn_jump.check() == 2:
+        PLAYER_STATE_NEXT = "air"
+        movement.y = -200
+
 func ground_state(delta):
     var movement = Vector2(0, 0)
     var speed = 300
-
-    if PLAYER_STATE == "air":
-        movement.y = 1900
 
     if btn_run.check() == 2:
         speed = 500
@@ -130,7 +175,30 @@ func ground_state(delta):
         pass
 
     if btn_jump.check() == 2:
+        PLAYER_STATE_NEXT = "air"
         movement.y = -200
 
-    if not check_collision():
-        move(movement, delta)
+    move(movement, delta)
+
+func air_state(delta):
+    var movement = Vector2(0, 0)
+    var speed = 300
+
+    movement.y = 400
+
+    if btn_run.check() == 2:
+        speed = 500
+
+    if btn_right.check() == 2:
+        movement.x = -speed
+        ORIENTATION_NEXT = "right"
+    elif btn_left.check() == 2:
+        movement.x = speed
+        ORIENTATION_NEXT = "left"
+    if btn_left.check() == 0 and btn_right.check() == 0:
+        pass
+
+    if btn_jump.check() == 2:
+        movement.y += -600
+
+    move(movement, delta)
