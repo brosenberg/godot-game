@@ -98,6 +98,24 @@ func align_left(body1, body2):
     #prints("Moving to", new_pos, "Old pos", body1.get_global_pos())
     body1.set_global_pos(new_pos)
 
+func do_horiz_collision(body, collision):
+    var self_corners = get_corners(self)
+    var body_corners = get_corners(body)
+    prints("-------------------------")
+    prints("self_corners:", self_corners)
+    prints("body_corners:", body_corners)
+    prints("self.pos:", self.get_global_pos())
+    prints("body.pos:", body.get_global_pos())
+    prints("collision:", collision)
+    prints("body.name:", body.get_name())
+    if horizontal_collide(collision) == "left":
+        print("colliding left")
+        align_left(self, body)
+    else:
+        print("colliding right")
+        align_right(self, body)
+    prints("-------------------------")
+
 # This will shuffle the player around if there's multiple conflicting
 # collisions. This should probably check to see if it's moving the player
 # around cyclically and if so, punt them to somewhere safe.
@@ -122,18 +140,13 @@ func handle_collision():
                 vertical_collide(collision)
             elif collision.size() == 4:
                 #if PLAYER_STATE != "ground" and collision[0][0] == collision[1][0]:
-                if collision[0][0] == collision[1][0]:
+                if collision[0][0] == collision[1][0] and movement.y != 0:
                     if vertical_collide(collision) == "down":
                         align_down(self, body)
                         on_ground = true
-                if collision[0][1] == collision[1][1]:
-                    prints("Horiz collide with", body.get_name())
-                    if horizontal_collide(collision) == "left":
-                        print("colliding left")
-                        align_left(self, body)
-                    else:
-                        print("colliding right")
-                        align_right(self, body)
+                        prints(get_global_pos())
+                if collision[0][1] == collision[1][1] and movement.x != 0:
+                    do_horiz_collision(body, collision)
         if not on_ground:
             PLAYER_STATE_NEXT = "air"
         return true
