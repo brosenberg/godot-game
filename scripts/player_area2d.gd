@@ -13,10 +13,26 @@ var collide_node = null
 var PLAYER_STATE_PREV = ""
 var PLAYER_STATE = ""
 var PLAYER_STATE_NEXT = "air"
+# Maybe change to a tuple of:
+# (air/ground, walk/run,boost, water/atmo)
 
 var ORIENTATION_PREV = ""
 var ORIENTATION = ""
 var ORIENTATION_NEXT = ""
+
+var movement = Vector2(0, 0)
+var max_y_v = 800.0
+var max_x_v = 700.0
+
+var walk_speed = 2.8
+var max_walk = 350.0
+
+var run_speed = 3.0
+var max_run = 550.0
+
+var jump_speed = 540.0
+
+var GRAVITY = 11
 
 func set_facing():
     # Default facing
@@ -43,9 +59,13 @@ func vertical_collide(collision):
     else:
         return "up"
 
+# TODO: Send this the velocity vector to determine collision direction
 func horizontal_collide(collision):
-    PLAYER_STATE_NEXT = "ground_stop"
-    if collision[0][0] > get_global_pos()[0]:
+    if movement.x > 0:
+        return "right"
+    elif movement.x < 0:
+        return "left"
+    elif ORIENTATION == "left":
         return "right"
     else:
         return "left"
@@ -64,19 +84,18 @@ func align_down(body1, body2):
 func align_right(body1, body2):
     var body1_corners = get_corners(body1)
     var body2_corners = get_corners(body2)
-    var new_pos = Vector2(body2_corners[0]+body1_corners[4],
+    var new_pos = Vector2(body2_corners[0]-body1_corners[4],
                           body1.get_pos()[1])
-    prints(body2_corners[0], body2_corners[1], body1_corners[4])
-    prints("Moving to", new_pos, "Old pos", body1.get_global_pos())
+    #prints("Moving to", new_pos, "Old pos", body1.get_global_pos())
     body1.set_global_pos(new_pos)
 
 func align_left(body1, body2):
     var body1_corners = get_corners(body1)
     var body2_corners = get_corners(body2)
-    var new_pos = Vector2(body2_corners[1]-body1_corners[4],
+    var new_pos = Vector2(body2_corners[1]+body1_corners[4],
                           body1.get_pos()[1])
-    prints(body2_corners[0], body2_corners[1], body1_corners[4])
-    prints("Moving to", new_pos, "Old pos", body1.get_global_pos())
+    #prints(body2_corners[0], body2_corners[1], body1_corners[4])
+    #prints("Moving to", new_pos, "Old pos", body1.get_global_pos())
     body1.set_global_pos(new_pos)
 
 # This will shuffle the player around if there's multiple conflicting
@@ -87,6 +106,7 @@ func align_left(body1, body2):
 func handle_collision():
     var bodies = get_overlapping_bodies()
     var mycoll = get_node("CollisionShape2D")
+    var on_ground = false
     if bodies.size():
         for body in bodies:
             var collision_node = body.get_node("CollisionShape2D")
@@ -105,15 +125,20 @@ func handle_collision():
                 if collision[0][0] == collision[1][0]:
                     if vertical_collide(collision) == "down":
                         align_down(self, body)
+                        on_ground = true
                 if collision[0][1] == collision[1][1]:
+                    prints("Horiz collide with", body.get_name())
                     if horizontal_collide(collision) == "left":
                         print("colliding left")
                         align_left(self, body)
                     else:
                         print("colliding right")
                         align_right(self, body)
+        if not on_ground:
+            PLAYER_STATE_NEXT = "air"
         return true
     else:
+        PLAYER_STATE_NEXT = "air"
         return false
 
 func _ready():
@@ -128,9 +153,7 @@ func _fixed_process(delta):
     ORIENTATION_PREV = ORIENTATION
     ORIENTATION = ORIENTATION_NEXT
 
-    if PLAYER_STATE == "ground_stop":
-        ground_stop_state(delta)
-    elif PLAYER_STATE == "ground":
+    if PLAYER_STATE == "ground":
         ground_state(delta)
     elif PLAYER_STATE == "air":
         air_state(delta)
@@ -143,62 +166,68 @@ func move(vector, delta):
     vector.y *= delta
     global_translate(vector)
 
-# Ground stop state
-func ground_stop_state(delta):
-    var movement = Vector2(0, 0)
-
-    if btn_right.check() == 2:
-        PLAYER_STATE_NEXT = "ground"
-        ORIENTATION_NEXT = "right"
-    elif btn_left.check() == 2:
-        PLAYER_STATE_NEXT = "ground"
-        ORIENTATION_NEXT = "left"
-
-    if btn_jump.check() == 2:
-        PLAYER_STATE_NEXT = "air"
-        movement.y = -200
-
 func ground_state(delta):
-    var movement = Vector2(0, 0)
-    var speed = 300
-
-    if btn_run.check() == 2:
-        speed = 500
 
     if btn_right.check() == 2:
-        movement.x = -speed
+        if ORIENTATION == "left":
+            prints("Turning around", movement.x)
+            movement.x = 0
+        else:
+            movement.x -= walk_speed
+            if btn_run.check() == 2:
+                movement.x -= run_speed
+                if abs(movement.x) > max_run:
+                    movement.x = -max_run
+            elif abs(movement.x) > max_walk:
+                movement.x = -max_walk
         ORIENTATION_NEXT = "right"
     elif btn_left.check() == 2:
-        movement.x = speed
+        if ORIENTATION == "right":
+            prints("Turning around", movement.x)
+            movement.x = 0
+        else:
+            movement.x += walk_speed
+            if btn_run.check() == 2:
+                movement.x += run_speed
+                if movement.x > max_run:
+                    movement.x = max_run
+            elif movement.x > max_walk:
+                movement.x = max_walk
         ORIENTATION_NEXT = "left"
-    if btn_left.check() == 0 and btn_right.check() == 0:
-        pass
+    elif btn_left.check() == 0 and btn_right.check() == 0 and movement.x != 0:
+        prints("Slowing down", movement.x)
+        movement.x *= 0.8
+        if abs(movement.x) < 10:
+            movement.x =0
 
     if btn_jump.check() == 2:
         PLAYER_STATE_NEXT = "air"
-        movement.y = -200
+        movement.y -= jump_speed
 
     move(movement, delta)
 
 func air_state(delta):
-    var movement = Vector2(0, 0)
-    var speed = 300
-
-    movement.y = 400
-
-    if btn_run.check() == 2:
-        speed = 500
+    movement.y += GRAVITY
+    if movement.y > max_y_v:
+        movement.y = max_y_v
 
     if btn_right.check() == 2:
-        movement.x = -speed
+        movement.x -= walk_speed
+        if btn_run.check() == 2:
+            movement.x -= run_speed
+            if abs(movement.x) > max_run:
+                movement.x = -max_run
+        elif abs(movement.x) > max_walk:
+            movement.x = -max_walk
         ORIENTATION_NEXT = "right"
     elif btn_left.check() == 2:
-        movement.x = speed
-        ORIENTATION_NEXT = "left"
-    if btn_left.check() == 0 and btn_right.check() == 0:
-        pass
-
-    if btn_jump.check() == 2:
-        movement.y += -600
+        movement.x += walk_speed
+        if btn_run.check() == 2:
+            movement.x += run_speed
+            if movement.x > max_run:
+                movement.x = max_run
+        elif movement.x > max_walk:
+            movement.x = max_walk
+        ORIENTATION_NEXT = "right"
 
     move(movement, delta)

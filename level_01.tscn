@@ -11,14 +11,15 @@
 editor/display_folded = true
 transform/pos = Vector2( 529.151, 347.245 )
 
+[node name="ground1" parent="." instance=ExtResource( 1 )]
+
+editor/display_folded = true
+transform/pos = Vector2( 1302.45, 347.245 )
+
 [node name="ground5" parent="." instance=ExtResource( 1 )]
 
 editor/display_folded = true
-transform/pos = Vector2( 505.44, -14.3404 )
-
-[node name="ground1" parent="." instance=ExtResource( 1 )]
-
-transform/pos = Vector2( 1257.44, 287.412 )
+transform/pos = Vector2( -52.8201, 287.104 )
 
 [node name="ground2" parent="." instance=ExtResource( 1 )]
 
@@ -62,4 +63,3 @@ transform/scale = Vector2( 0.1, 0.1 )
 texture = ExtResource( 3 )
 
 
-[editable path="ground"]
